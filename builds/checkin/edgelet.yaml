@@ -1,17 +1,17 @@
+resources:
+  containers:
+    - container: ubuntu16.04
+      image: ubuntu:16.04
+    - container: ubuntu18.04
+      image: ubuntu:18.04
+    - container: centos7.5
+      image: centos:7.5.1804
 phases:
 
 ################################################################################
   - phase: linux_amd64
 ################################################################################
     displayName: Linux amd64
-    resources:
-      containers:
-        - container: ubuntu16.04
-          image: ubuntu:16.04
-        - container: ubuntu18.04
-          image: ubuntu:18.04
-        - container: centos7.5
-          image: centos:7.5.1804
     queue:
       name: Hosted Linux Preview
       matrix:
