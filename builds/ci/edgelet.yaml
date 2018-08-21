@@ -1,47 +1,47 @@
 resources:
   containers:
-    - container: ubuntu1604
+    - container: u14
+      image: ubuntu:14.04
+    - container: u16
       image: ubuntu:16.04
-    - container: ubuntu1804
-      image: ubuntu:18.04
-    - container: centos75
-      image: centos:7.5.1804
-phases:
+queue:
+  matrix:
+    ubuntu14:
+      containerResource: u14
+    ubuntu16:
+      containerResource: u16
+  container: $[ variables['containerResource'] ]
+steps:
+  - script: printenv
 
-################################################################################
-  - phase: linux_amd64
-################################################################################
-    displayName: Linux amd64
-    queue:
-      name: Hosted Linux Preview
-      matrix:
-        ubuntu16:
-          containerResource: ubuntu1604
-        ubuntu18:
-          containerResource: ubuntu1804
-        centos75:
-          containerResource: centos75
-      container: $[ variables['containerResource'] ]
-    steps:
-      - script: echo "##vso[task.setvariable variable=NO_VALGRIND;]true"
-        displayName: Set env variables
-      - task: Bash@3
-        displayName: Install Rust
-        inputs:
-          filePath: edgelet/build/linux/install.sh
-      - task: Bash@3
-        displayName: Check submodules
-        inputs:
-          filePath: edgelet/build/linux/check-submodules.sh
-      - task: Bash@3
-        displayName: Build
-        inputs:
-          filePath: edgelet/build/linux/build.sh
-      - task: Bash@3
-        displayName: Test
-        inputs:
-          filePath: edgelet/build/linux/test.sh
-
+# phases:
+#
+# ################################################################################
+#   - phase: linux_amd64
+# ################################################################################
+#     displayName: Linux amd64
+#     queue:
+#       name: Hosted Linux Preview
+#     steps:
+#       - script: echo "##vso[task.setvariable variable=NO_VALGRIND;]true"
+#         displayName: Set env variables
+#       - task: Bash@3
+#         displayName: Install Rust
+#         inputs:
+#           filePath: edgelet/build/linux/install.sh
+#       - task: Bash@3
+#         displayName: Check submodules
+#         inputs:
+#           filePath: edgelet/build/linux/check-submodules.sh
+#       - task: Bash@3
+#         displayName: Build
+#         inputs:
+#           filePath: edgelet/build/linux/build.sh
+#       - task: Bash@3
+#         displayName: Test
+#         inputs:
+#           filePath: edgelet/build/linux/test.sh
+#
 # ################################################################################
 #   - phase: linux_arm32v7
 # ################################################################################
