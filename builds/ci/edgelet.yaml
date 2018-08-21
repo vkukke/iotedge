@@ -5,6 +5,7 @@ resources:
     - container: u16
       image: ubuntu:16.04
 queue:
+  name: Hosted Linux Preview
   matrix:
     ubuntu14:
       containerResource: u14
