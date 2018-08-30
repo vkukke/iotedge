@@ -65,6 +65,8 @@ echo "RUSTUP=$RUSTUP_HOME"
 ls -l $RUSTUP_HOME
 echo "PROJECT_ROOT=$PROJECT_ROOT"
 ls -l $PROJECT_ROOT
+mkdir -p ${PROJECT_ROOT}/target
+
 if [[ -z ${RELEASE} ]]; then
     cd "$PROJECT_ROOT" && cross build --all --target "$TOOLCHAIN"
 else
