@@ -59,11 +59,11 @@ process_args()
 
 process_args "$@"
 
-$echo "CARGO=$CARGO_HOME"
+echo "CARGO=$CARGO_HOME"
 ls -l $CARGO_HOME
-$echo "RUSTUP=$RUSTUP_HOME"
+echo "RUSTUP=$RUSTUP_HOME"
 ls -l $RUSTUP_HOME
-$echo "PROJECT_ROOT=$PROJECT_ROOT"
+echo "PROJECT_ROOT=$PROJECT_ROOT"
 ls -l $PROJECT_ROOT
 if [[ -z ${RELEASE} ]]; then
     cd "$PROJECT_ROOT" && cross build --all --target "$TOOLCHAIN"
