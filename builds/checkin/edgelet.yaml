@@ -58,7 +58,7 @@ phases:
 ################################################################################
   - phase: centos_linux_arm32v7
 ################################################################################
-    displayName: Linux arm32v7
+    displayName: Linux arm32v7 test
     queue:
       name: Hosted Linux Preview
     steps:
@@ -71,13 +71,10 @@ phases:
         displayName: Install Rust
         inputs:
           filePath: edgelet/build/linux/install.sh
-      - script: cargo install --git https://github.com/myagley/cross.git --branch set-path
-        displayName: Install cross (fork with docker fix)
       - task: Bash@3
         displayName: armv7-unknown-linux-gnueabihf test
         inputs:
-          filePath: edgelet/build/linux/centos/test-iotedged.sh
-          arguments: --toolchain armv7-unknown-linux-gnueabihf --release true
+          filePath: edgelet/build/linux/centos/arm32v7/test-iotedged.sh
 
 ################################################################################
 #   - phase: windows_amd64
