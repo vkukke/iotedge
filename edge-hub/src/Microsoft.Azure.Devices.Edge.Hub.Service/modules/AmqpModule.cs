@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Service.Modules
     using Microsoft.Azure.Devices.Edge.Hub.Amqp.Settings;
     using Microsoft.Azure.Devices.Edge.Hub.Core;
     using Microsoft.Azure.Devices.Edge.Hub.Core.Identity;
+    using Microsoft.Azure.Devices.Edge.Hub.Http;
     using Microsoft.Azure.Devices.Edge.Util;
 
     public class AmqpModule : Module
@@ -71,12 +72,11 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Service.Modules
                     var transportSettings = c.Resolve<ITransportSettings>();
                     var transportListenerProvider = c.Resolve<ITransportListenerProvider>();
                     var linkHandlerProvider = c.Resolve<ILinkHandlerProvider>();
-                    var credentialsCacheTask = c.Resolve<Task<ICredentialsCache>>();
-                    var authenticatorTask = c.Resolve<Task<IAuthenticator>>();
-                    var connectionProviderTask = c.Resolve<Task<IConnectionProvider>>();
-                    ICredentialsCache credentialsCache = await credentialsCacheTask;
-                    IAuthenticator authenticator = await authenticatorTask;
-                    IConnectionProvider connectionProvider = await connectionProviderTask;
+                    ICredentialsCache credentialsCache = await c.Resolve<Task<ICredentialsCache>>();
+                    var webSocketListenerRegistry = c.Resolve<IWebSocketListenerRegistry>();
+                    IAuthenticator authenticator = await c.Resolve<Task<IAuthenticator>>();
+                    IConnectionProvider connectionProvider = await c.Resolve<Task<IConnectionProvider>>();
+                    var webSocketListenerRegistry = c.Resolve<IWebSocketListenerRegistry>();
                     AmqpSettings amqpSettings = AmqpSettingsProvider.GetDefaultAmqpSettings(
                         this.iotHubHostName,
                         authenticator,
@@ -88,7 +88,8 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Service.Modules
                     return new AmqpProtocolHead(
                         transportSettings,
                         amqpSettings,
-                        transportListenerProvider);
+                        transportListenerProvider,
+                        webSocketListenerRegistry);
                 })
                 .As<Task<AmqpProtocolHead>>()
                 .SingleInstance();

@@ -8,8 +8,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Mqtt
     using DotNetty.Buffers;
     using DotNetty.Codecs.Mqtt;
     using DotNetty.Transport.Channels;
-    using Microsoft.AspNetCore.Http;
-    using Microsoft.Azure.Devices.Edge.Hub.Http;
+    using Microsoft.Azure.Devices.Edge.Hub.Core;
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Azure.Devices.ProtocolGateway.Identity;
     using Microsoft.Azure.Devices.ProtocolGateway.Mqtt;
@@ -53,15 +52,15 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Mqtt
 
         public string SubProtocol => MqttWebSocketProtocol;
 
-        public async Task ProcessWebSocketRequestAsync(HttpContext context, string correlationId)
+        public async Task ProcessWebSocketRequestAsync(WebSocket webSocket, string hostname, EndPoint localEndPoint, EndPoint remoteEndPoint, string correlationId)
         {
             try
             {
-                WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync(this.SubProtocol);
+                //WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync(this.SubProtocol);
 
                 var serverChannel = new ServerWebSocketChannel(
                     webSocket,
-                    new IPEndPoint(context.Connection.RemoteIpAddress, context.Connection.RemotePort)
+                    remoteEndPoint
                 );
 
                 serverChannel
@@ -81,13 +80,13 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Mqtt
 
                 await this.workerGroup.GetNext().RegisterAsync(serverChannel);
 
-                Events.Established(context.Request.Host.Host, correlationId);
+                Events.Established(hostname, correlationId);
 
                 await serverChannel.WebSocketClosed.Task;  // This will wait until the websocket is closed 
             }
             catch (Exception ex) when (!ex.IsFatal())
             {
-                Events.Exception(context.Request.Host.Host, correlationId, ex);
+                Events.Exception(hostname, correlationId, ex);
                 throw;
             }
         }

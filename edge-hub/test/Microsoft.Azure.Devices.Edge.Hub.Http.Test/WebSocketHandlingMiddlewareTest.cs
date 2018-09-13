@@ -3,9 +3,12 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Http.Test
 {
     using System;
     using System.Collections.Generic;
+    using System.Net;
     using System.Threading.Tasks;
     using Microsoft.AspNetCore.Http;
+    using Microsoft.Azure.Devices.Edge.Hub.Core;
     using Microsoft.Azure.Devices.Edge.Hub.Http.Middleware;
+    using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
     using Moq;
     using Xunit;
@@ -48,7 +51,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Http.Test
             var middleware = new WebSocketHandlingMiddleware(this._ThrowingNextDelegate(), registry);
             await middleware.Invoke(httpContext);
 
-            Mock.Get(registry).Verify(r => r.InvokeAsync(httpContext, It.IsAny<string>()));
+            Mock.Get(registry).Verify(r => r.GetListener(httpContext.WebSockets.WebSocketRequestedProtocols, It.IsAny<string>()));
         }
 
         [Fact]
@@ -78,11 +81,39 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Http.Test
             Mock.Get(next).Verify(n => n(httpContext));
         }
 
+        [Fact]
+        public async Task SetsBadrequestWhenANonExistentListener()
+        {
+            var listener = Mock.Of<IWebSocketListener>(wsl => wsl.SubProtocol == "abc");
+            var registry = new WebSocketListenerRegistry();
+            registry.TryRegister(listener);
+            HttpContext httpContext = this._ContextWithRequestedSubprotocols("xyz");
+
+            var middleware = new WebSocketHandlingMiddleware(this._ThrowingNextDelegate(), registry);
+            await middleware.Invoke(httpContext);
+
+            Assert.Equal((int)HttpStatusCode.BadRequest, httpContext.Response.StatusCode);
+        }
+
+        [Fact]
+        public async Task SetsBadrequestWhenNoRegisteredListener()
+        {
+            var registry = new WebSocketListenerRegistry();
+            HttpContext httpContext = this._ContextWithRequestedSubprotocols("xyz");
+
+            var middleware = new WebSocketHandlingMiddleware(this._ThrowingNextDelegate(), registry);
+            await middleware.Invoke(httpContext);
+
+            Assert.Equal((int)HttpStatusCode.BadRequest, httpContext.Response.StatusCode);
+        }
+
         HttpContext _WebSocketRequestContext()
         {
             return Mock.Of<HttpContext>(ctx =>
                 ctx.WebSockets == Mock.Of<WebSocketManager>(wsm =>
-                    wsm.IsWebSocketRequest));
+                    wsm.IsWebSocketRequest) &&
+                ctx.Response == Mock.Of<HttpResponse>() &&
+                ctx.Connection == Mock.Of<ConnectionInfo>());
         }
 
         HttpContext _NonWebSocketRequestContext()
@@ -90,6 +121,14 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Http.Test
             return Mock.Of<HttpContext>(ctx =>
                 ctx.WebSockets == Mock.Of<WebSocketManager>(wsm =>
                     wsm.IsWebSocketRequest == false));
+        }
+
+        HttpContext _ContextWithRequestedSubprotocols(params string[] subprotocols)
+        {
+            return Mock.Of<HttpContext>(ctx =>
+                ctx.WebSockets == Mock.Of<WebSocketManager>(wsm =>
+                    wsm.WebSocketRequestedProtocols == subprotocols && wsm.IsWebSocketRequest) &&
+                ctx.Response == Mock.Of<HttpResponse>());
         }
 
         RequestDelegate _ThrowingNextDelegate()
@@ -102,7 +141,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Http.Test
             var registry = new Mock<IWebSocketListenerRegistry>();
 
             registry
-                .Setup(wslr => wslr.InvokeAsync(It.IsAny<HttpContext>(), It.IsAny<string>()))
+                .Setup(wslr => wslr.GetListener(It.IsAny<IList<string>>(), It.IsAny<string>()))
                 .Throws(new Exception("IWebSocketListenerRegistry.InvokeAsync should not be called"));
 
             return registry.Object;
@@ -113,8 +152,8 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Http.Test
             var registry = new Mock<IWebSocketListenerRegistry>();
 
             registry
-                .Setup(wslr => wslr.InvokeAsync(It.IsAny<HttpContext>(), It.IsAny<string>()))
-                .Returns(Task.FromResult(true))
+                .Setup(wslr => wslr.GetListener(It.IsAny<IList<string>>(), It.IsAny<string>()))
+                .Returns(Option.None<IWebSocketListener>())
                 .Callback<HttpContext, string>((ctx, id) => correlationIds.Add(id));
 
             return registry.Object;
